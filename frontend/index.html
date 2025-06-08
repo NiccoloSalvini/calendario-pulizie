@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Pulizie</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            padding: 2rem;
+            background: #f5f5f5;
+        }
+        h1 {
+            text-align: center;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 2rem;
+        }
+        th, td {
+            padding: 0.8rem;
+            border: 1px solid #ddd;
+        }
+        th {
+            background-color: #eee;
+        }
+    </style>
+</head>
+<body>
+    <h1>Calendario Pulizie</h1>
+    <table>
+        <thead>
+            <tr>
+                <th>Data</th>
+                <th>Ospite</th>
+                <th>Persone</th>
+                <th>Check-in</th>
+                <th>Check-out</th>
+            </tr>
+        </thead>
+        <tbody id="prenotazioni"></tbody>
+    </table>
+    <script>
+        fetch("https://aesthetic-licorice-77d1a4.netlify.app/prenotazioni")
+            .then(res => res.json())
+            .then(data => {
+                const tbody = document.getElementById("prenotazioni");
+                data.forEach(p => {
+                    const tr = document.createElement("tr");
+                    tr.innerHTML = `
+                        <td>${p.date}</td>
+                        <td>${p.guestName || '—'}</td>
+                        <td>${p.numberOfGuests || '—'}</td>
+                        <td>${p.startDate}</td>
+                        <td>${p.endDate}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            })
+            .catch(err => alert("Errore nel caricamento dati"));
+    </script>
+</body>
+</html>
