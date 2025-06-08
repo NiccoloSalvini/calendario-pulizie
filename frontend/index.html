@@ -21,6 +21,7 @@
         th, td {
             padding: 0.8rem;
             border: 1px solid #ddd;
+            text-align: left;
         }
         th {
             background-color: #eee;
@@ -32,33 +33,52 @@
     <table>
         <thead>
             <tr>
-                <th>Data</th>
                 <th>Ospite</th>
+                <th>Notti</th>
                 <th>Persone</th>
-                <th>Check-in</th>
-                <th>Check-out</th>
+                <th>Data Arrivo</th>
+                <th>Data Partenza</th>
             </tr>
         </thead>
         <tbody id="prenotazioni"></tbody>
     </table>
     <script>
-        fetch("https://aesthetic-licorice-77d1a4.netlify.app/prenotazioni")
-            .then(res => res.json())
+        // L'URL dovrebbe puntare al tuo servizio deployato (su Render o dove preferisci)
+        const apiUrl = "https://calendario-pulizie.onrender.com/prenotazioni";
+
+        fetch(apiUrl)
+            .then(res => {
+                if (!res.ok) {
+                    // Mostra un errore più dettagliato in caso di problemi
+                    throw new Error(`Errore dal server: ${res.status} ${res.statusText}`);
+                }
+                return res.json();
+            })
             .then(data => {
                 const tbody = document.getElementById("prenotazioni");
+                tbody.innerHTML = ''; // Pulisce la tabella prima di inserire i dati
+                
                 data.forEach(p => {
                     const tr = document.createElement("tr");
+
+                    // Celle della tabella aggiornate per usare i nuovi nomi dei campi
+                    // (es. p.ospite invece di p.guestName)
                     tr.innerHTML = `
-                        <td>${p.date}</td>
-                        <td>${p.guestName || '—'}</td>
-                        <td>${p.numberOfGuests || '—'}</td>
-                        <td>${p.startDate}</td>
-                        <td>${p.endDate}</td>
+                        <td>${p.ospite || '—'}</td>
+                        <td>${p.notti !== undefined ? p.notti : '—'}</td>
+                        <td>${p.persone !== undefined ? p.persone : '—'}</td>
+                        <td>${p.data_arrivo || '—'}</td>
+                        <td>${p.data_partenza || '—'}</td>
                     `;
                     tbody.appendChild(tr);
                 });
             })
-            .catch(err => alert("Errore nel caricamento dati"));
+            .catch(err => {
+                console.error("Errore nel caricamento dati:", err);
+                // Mostra l'errore anche sulla pagina
+                const tbody = document.getElementById("prenotazioni");
+                tbody.innerHTML = `<tr><td colspan="5" style="color: red; text-align: center;">Errore nel caricamento dati: ${err.message}</td></tr>`;
+            });
     </script>
 </body>
 </html>
