@@ -5,15 +5,24 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Calendario Pulizie</title>
     <style>
+        :root {
+            --primary-color: #495057;
+            --checkin-color: #28a745;
+            --checkout-color: #ffc107;
+            --stay-color: #e7f5ff;
+            --border-color: #e9ecef;
+        }
+
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
             padding: 1rem;
             background: #f8f9fa;
             color: #333;
         }
         
         .calendar-container {
-            max-width: 1100px;
+            max-width: 1200px;
             margin: 2rem auto;
             background: #fff;
             border-radius: 8px;
@@ -26,7 +35,7 @@
             justify-content: space-between;
             align-items: center;
             padding: 1rem 1.5rem;
-            background: #495057;
+            background: var(--primary-color);
             color: white;
         }
 
@@ -54,17 +63,17 @@
             display: grid;
             grid-template-columns: repeat(7, 1fr);
             gap: 1px;
-            background-color: #e9ecef;
+            background-color: var(--border-color);
         }
 
         .day-cell, .day-header {
             padding: 0.5rem;
-            text-align: center;
             background-color: #fff;
         }
 
         .day-header {
             font-weight: bold;
+            text-align: center;
             background-color: #f1f3f5;
         }
         
@@ -74,13 +83,16 @@
             display: flex;
             flex-direction: column;
             align-items: flex-start;
-            padding: 0.5rem;
             transition: background-color 0.3s;
         }
         
         .day-number {
             font-weight: bold;
             margin-bottom: 0.5rem;
+        }
+
+        .mobile-day-of-week {
+            display: none; /* Nascosto su desktop */
         }
 
         .day-cell.other-month {
@@ -91,26 +103,27 @@
         }
         
         .day-cell.stay-day {
-            background-color: #e7f5ff; /* Sfondo azzurro per i giorni di permanenza */
+            background-color: var(--stay-color);
         }
         
         .event {
-            padding: 0.3rem 0.5rem;
+            padding: 0.4rem 0.6rem;
             border-radius: 4px;
             font-size: 0.8rem;
-            margin-bottom: 4px;
-            width: calc(100% - 1rem);
+            margin-bottom: 5px;
+            width: calc(100% - 1.2rem);
             box-sizing: border-box;
             text-align: left;
+            line-height: 1.4;
         }
         
         .checkin-event {
-            background-color: #28a745; /* Verde per il check-in */
+            background-color: var(--checkin-color);
             color: white;
         }
 
         .checkout-event {
-            background-color: #ffc107; /* Giallo per il check-out */
+            background-color: var(--checkout-color);
             color: #212529;
         }
         
@@ -122,6 +135,67 @@
             text-align: center;
             padding: 2rem;
             font-size: 1.2rem;
+            grid-column: 1 / -1;
+        }
+
+        /* --- STILI RESPONSIVE PER MOBILE --- */
+        @media (max-width: 768px) {
+            body {
+                padding: 0;
+            }
+            .calendar-container {
+                margin: 0;
+                border-radius: 0;
+                box-shadow: none;
+            }
+            .calendar-header h2 {
+                font-size: 1.1rem;
+            }
+            .calendar-header button {
+                padding: 0.4rem 0.8rem;
+            }
+            #day-headers {
+                display: none; /* Nasconde le intestazioni dei giorni */
+            }
+            #calendar-body {
+                display: block; /* Cambia la griglia in una lista verticale */
+                background-color: #fff;
+            }
+            .day-cell {
+                min-height: auto;
+                flex-direction: row;
+                align-items: flex-start;
+                gap: 1rem;
+                padding: 0.75rem;
+                border-bottom: 1px solid var(--border-color);
+            }
+            .day-cell.other-month {
+                display: none; /* Nasconde i giorni degli altri mesi */
+            }
+            .day-number {
+                flex-basis: 50px;
+                flex-shrink: 0;
+                text-align: center;
+                font-size: 1rem;
+                margin: 0;
+            }
+            .mobile-day-of-week {
+                display: block;
+                font-size: 0.75rem;
+                font-weight: normal;
+                color: #6c757d;
+                margin-top: 2px;
+            }
+            .event-container {
+                display: flex;
+                flex-direction: column;
+                gap: 0.5rem;
+                flex-grow: 1;
+            }
+            .event {
+                width: 100%;
+                margin: 0;
+            }
         }
 
     </style>
@@ -156,7 +230,7 @@
                 allPrenotazioni = await response.json();
                 renderCalendar();
             } catch (err) {
-                calendarBody.innerHTML = `<div style="color: red; padding: 2rem;">Errore nel caricamento dati: ${err.message}</div>`;
+                calendarBody.innerHTML = `<div id="loading" style="color: red;">Errore nel caricamento dati: ${err.message}</div>`;
             }
         };
 
@@ -185,13 +259,17 @@
                 const dayCell = document.createElement('div');
                 dayCell.className = 'day-cell';
                 
+                const currentDayString = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                const currentDayDate = new Date(currentDayString + "T12:00:00Z");
+
                 const dayNumber = document.createElement('div');
                 dayNumber.className = 'day-number';
-                dayNumber.textContent = day;
+                const dayOfWeek = new Intl.DateTimeFormat('it-IT', { weekday: 'short' }).format(currentDayDate);
+                dayNumber.innerHTML = `${day}<span class="mobile-day-of-week">${dayOfWeek}.</span>`;
                 dayCell.appendChild(dayNumber);
-                
-                const currentDayString = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                const currentDayDate = new Date(currentDayString + "T12:00:00Z"); // Usa UTC per evitare problemi di fuso orario
+
+                const eventContainer = document.createElement('div');
+                eventContainer.className = 'event-container';
 
                 allPrenotazioni.forEach(p => {
                     if (!p.data_arrivo || !p.data_partenza) return;
@@ -199,34 +277,30 @@
                     const arrivalDate = new Date(p.data_arrivo + "T12:00:00Z");
                     const departureDate = new Date(p.data_partenza + "T12:00:00Z");
 
-                    // Controlla se è un giorno di permanenza (tra arrivo e partenza)
-                    if (currentDayDate > arrivalDate && currentDayDate < departureDate) {
+                    if (currentDayDate >= arrivalDate && currentDayDate < departureDate) {
                         dayCell.classList.add('stay-day');
                     }
-
-                    // Controlla se è il giorno del check-in
                     if (currentDayDate.getTime() === arrivalDate.getTime()) {
-                        dayCell.classList.add('stay-day');
                         const eventDiv = document.createElement('div');
                         eventDiv.className = 'event checkin-event';
                         eventDiv.innerHTML = `<span class="guest-name">Ingresso: ${p.ospite}</span><br>Persone: ${p.persone}`;
-                        dayCell.appendChild(eventDiv);
+                        eventContainer.appendChild(eventDiv);
                     }
-                    
-                    // Controlla se è il giorno del check-out
                     if (currentDayDate.getTime() === departureDate.getTime()) {
                         const eventDiv = document.createElement('div');
                         eventDiv.className = 'event checkout-event';
                         eventDiv.innerHTML = `<span class="guest-name">Pulizia: ${p.ospite}</span>`;
-                        dayCell.appendChild(eventDiv);
+                        eventContainer.appendChild(eventDiv);
                     }
                 });
                 
+                dayCell.appendChild(eventContainer);
                 calendarBody.appendChild(dayCell);
             }
         };
         
         const renderDayHeaders = () => {
+            dayHeadersContainer.innerHTML = ''; // Pulisce per evitare duplicati
             const giorni = ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato', 'Domenica'];
             giorni.forEach(giorno => {
                 const headerCell = document.createElement('div');
