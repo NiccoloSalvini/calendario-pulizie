@@ -6,9 +6,9 @@
     <title>Calendario Pulizie</title>
     <style>
         :root {
-            --booking-color: #007bff;
+            --primary-color: #343a40;
+            --border-color: #e9ecef;
             --cleaning-color: #ffc107;
-            --border-color: #dee2e6;
             --text-dark: #212529;
             --text-light: #fff;
             --bg-light: #f8f9fa;
@@ -81,7 +81,7 @@
         .day-number { font-size: 0.85rem; text-align: right; color: #6c757d; }
         .day-cell.other-month .day-number { color: #ced4da; }
         .day-cell.today .day-number {
-            background-color: var(--booking-color);
+            background-color: #dc3545;
             color: var(--text-light);
             width: 24px;
             height: 24px;
@@ -101,7 +101,6 @@
         .booking-bar, .cleaning-block {
             padding: 5px 10px;
             font-size: 0.8rem;
-            color: var(--text-light);
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -111,15 +110,13 @@
         }
 
         .booking-bar {
-            background-color: var(--booking-color);
-            width: calc(100% + 11px); /* Span over right padding and border */
+            color: var(--text-light);
             position: relative;
         }
-        .booking-bar.start { border-radius: 4px 0 0 4px; left: -5px; padding-left: 15px; }
-        .booking-bar.middle { border-radius: 0; left: -5px; color: transparent; user-select: none; }
-        .booking-bar.end { width: calc(100% - 5px); border-radius: 0 4px 4px 0; }
-        .booking-bar.single-day { width: calc(100% - 10px); left: 0; border-radius: 4px; }
-
+        .booking-bar.start { border-radius: 4px; }
+        .booking-bar.middle { border-radius: 0; color: transparent; user-select: none; width: calc(100% + 12px); left: -6px; }
+        .booking-bar.end { border-radius: 0 4px 4px 0; }
+        
 
         .cleaning-block {
             background-color: var(--cleaning-color);
@@ -151,7 +148,7 @@
                 font-weight: 600;
             }
             .mobile-day-header .weekday { color: #6c757d; font-weight: 500; }
-            .mobile-day.today .mobile-day-header { color: var(--booking-color); }
+            .mobile-day.today .mobile-day-header { color: #dc3545; }
 
             .mobile-event {
                 padding: 0.75rem;
@@ -160,9 +157,9 @@
                 font-size: 0.9rem;
                 border-left: 4px solid;
             }
-            .mobile-event.checkin { background-color: #eaf6ec; border-color: #28a745; }
-            .mobile-event.stay { background-color: #f8f9fa; border-color: #ced4da; }
-            .mobile-event.checkout { background-color: #fff8e1; border-color: #ffc107; }
+            .mobile-event.checkin { background-color: #e9ecef; }
+            .mobile-event.stay { background-color: #f8f9fa; }
+            .mobile-event.checkout { background-color: #fff8e1; border-color: #ffc107 !important; }
         }
     </style>
 </head>
@@ -195,12 +192,16 @@
 
         let currentDate = new Date();
         let allPrenotazioni = [];
+        const bookingColors = ['#0d6efd', '#198754', '#6f42c1', '#d63384', '#fd7e14', '#17a2b8', '#343a40'];
 
         const fetchPrenotazioni = async () => {
             try {
                 const response = await fetch("https://calendario-pulizie.onrender.com/prenotazioni");
                 if (!response.ok) throw new Error(`Errore dal server: ${response.status}`);
-                allPrenotazioni = (await response.json()).sort((a,b) => new Date(a.data_arrivo) - new Date(b.data_arrivo));
+                const data = await response.json();
+                allPrenotazioni = data
+                    .sort((a,b) => new Date(a.data_arrivo) - new Date(b.data_arrivo))
+                    .map((p, index) => ({...p, color: bookingColors[index % bookingColors.length]}));
                 render();
             } catch (err) {
                 loadingElement.innerHTML = `<div style="color: red;">Errore: ${err.message}</div>`;
@@ -262,18 +263,23 @@
                     if (currentDayDate >= arrivalDate && currentDayDate < departureDate) {
                         const bar = document.createElement('div');
                         bar.className = 'booking-bar';
+                        bar.style.backgroundColor = p.color;
                         
                         const isStart = currentDayDate.getTime() === arrivalDate.getTime();
                         const dayBeforeDeparture = new Date(departureDate.getTime() - 86400000);
                         const isEnd = currentDayDate.getTime() === dayBeforeDeparture.getTime();
-                        const isMiddle = !isStart && !isEnd;
-
-                        if (isStart) bar.classList.add('start');
-                        if (isEnd) bar.classList.add('end');
-                        if (isMiddle) bar.classList.add('middle');
-                        if (isStart && isEnd) bar.classList.add('single-day');
                         
-                        if (isStart) bar.textContent = `${p.ospite} (${p.persone}p)`;
+                        let textContent = ``;
+                        if (isStart) {
+                            bar.classList.add('start');
+                            textContent = `${p.ospite} (${p.persone}p)`;
+                        } else if (isEnd) {
+                            bar.classList.add('end');
+                        } else {
+                            bar.classList.add('middle');
+                        }
+                        if (isStart && isEnd) bar.classList.add('single-day');
+                        bar.textContent = textContent;
 
                         eventContainer.appendChild(bar);
                     }
@@ -305,8 +311,7 @@
                     const mobileDay = document.createElement('div');
                     mobileDay.className = 'mobile-day';
                     
-                    const todayStr = new Date().toISOString().slice(0, 10);
-                    if(dayStr === todayStr) mobileDay.classList.add('today');
+                    if(dayStr === new Date().toISOString().slice(0, 10)) mobileDay.classList.add('today');
                     
                     const header = document.createElement('div');
                     header.className = 'mobile-day-header';
@@ -330,6 +335,7 @@
                         
                         const eventDiv = document.createElement('div');
                         eventDiv.className = `mobile-event ${type}`;
+                        eventDiv.style.borderColor = p.color;
                         eventDiv.innerHTML = text;
                         mobileDay.appendChild(eventDiv);
                     });
