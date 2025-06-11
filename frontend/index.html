@@ -8,8 +8,10 @@
         :root {
             --primary-color: #343a40;
             --border-color: #e9ecef;
-            --booking-color: #007bff;
-            --cleaning-color: #dc3545;
+            --booking-color: #0d6efd;
+            --cleaning-color: #ffc107;
+            --text-dark: #212529;
+            --text-light: #fff;
         }
 
         body {
@@ -32,36 +34,25 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 1.25rem 1.75rem;
+            padding: 1rem 1.75rem;
             background: var(--primary-color);
-            color: white;
+            color: var(--text-light);
         }
 
-        .calendar-header h2 {
-            margin: 0;
-            font-size: 1.5rem;
-            text-transform: capitalize;
-        }
+        .calendar-header h2 { margin: 0; font-size: 1.5rem; text-transform: capitalize; }
 
         .calendar-header button {
             background: rgba(255,255,255,0.1);
             border: 1px solid rgba(255,255,255,0.3);
-            color: white;
+            color: var(--text-light);
             padding: 0.6rem 1.2rem;
             border-radius: 6px;
             cursor: pointer;
             transition: background-color 0.2s;
         }
+        .calendar-header button:hover { background-color: rgba(255,255,255,0.25); }
 
-        .calendar-header button:hover {
-            background-color: rgba(255,255,255,0.25);
-        }
-
-        .calendar-grid {
-            display: grid;
-            grid-template-columns: repeat(7, 1fr);
-        }
-
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); }
         .day-header {
             text-align: center;
             padding: 0.75rem 0.5rem;
@@ -72,58 +63,45 @@
         }
         
         .day-cell {
-            min-height: 90px;
+            min-height: 100px;
             position: relative;
             border-right: 1px solid var(--border-color);
             border-top: 1px solid var(--border-color);
-            padding-top: 2rem; /* Spazio per le barre */
+            padding: 0.5rem;
         }
         .day-cell:nth-child(7n+1) { border-left: 1px solid var(--border-color); }
         .day-cell.other-month { background-color: #f8f9fa; }
         
         .day-number {
-            position: absolute;
-            top: 5px;
-            right: 7px;
             font-size: 0.8rem;
             color: #6c757d;
+            margin-bottom: 0.5rem;
         }
         .day-cell.other-month .day-number { color: #ced4da; }
 
-        .booking-bar {
-            position: absolute;
-            top: 25px; /* Posizionamento sotto il numero del giorno */
-            left: 0;
-            right: 0;
-            height: 28px;
-            background-color: var(--booking-color);
-            color: white;
-            font-size: 0.8rem;
-            line-height: 28px;
-            overflow: hidden;
+        .event-container {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        
+        .booking-bar, .cleaning-block {
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            font-size: 0.85rem;
             white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
-        .booking-bar.booking-start {
-            left: 5px;
-            border-radius: 14px 0 0 14px;
-            padding-left: 10px;
+        .booking-bar {
+            background-color: var(--booking-color);
+            color: var(--text-light);
         }
-
-        .booking-bar.booking-end {
-            right: 5px;
-            border-radius: 0 14px 14px 0;
-        }
-
-        .cleaning-dot {
-            position: absolute;
-            top: 5px;
-            left: 5px;
-            width: 10px;
-            height: 10px;
+        .cleaning-block {
             background-color: var(--cleaning-color);
-            border-radius: 50%;
-            cursor: help;
+            color: var(--text-dark);
+            font-weight: 500;
         }
 
         #loading {
@@ -139,7 +117,7 @@
         @media (max-width: 768px) {
             body { padding: 0; }
             .calendar-container { margin: 0; border-radius: 0; box-shadow: none; }
-            #day-headers, .booking-bar, .cleaning-dot { display: none; }
+            #day-headers, .event-container { display: none; } /* Nasconde la vista desktop */
             
             #calendar-body { display: block; }
             .day-cell {
@@ -148,24 +126,23 @@
                 border-bottom: 1px solid var(--border-color);
                 padding: 0.75rem 1rem;
             }
-            .day-number {
-                position: static;
-                font-weight: bold;
-                color: #333;
-                font-size: 1rem;
-            }
+            .day-number { font-weight: bold; color: #333; font-size: 1rem; }
             .day-cell.other-month { display: none; }
             
-            .mobile-event-list { display: block; }
+            .mobile-event-list {
+                display: flex;
+                flex-direction: column;
+                gap: 0.5rem;
+                width: 100%;
+            }
             .mobile-event {
-                padding: 0.5rem;
-                margin-top: 0.5rem;
-                border-radius: 4px;
+                padding: 0.6rem;
+                border-radius: 5px;
                 font-size: 0.9rem;
             }
-            .mobile-event.checkin { background-color: #eaf6ec; border-left: 3px solid #28a745; }
+            .mobile-event.checkin { background-color: #eaf6ec; border-left: 4px solid #28a745; }
             .mobile-event.stay { background-color: #f8f9fa; }
-            .mobile-event.checkout { background-color: #fff8e1; border-left: 3px solid #ffc107; }
+            .mobile-event.checkout { background-color: #fff8e1; border-left: 4px solid #ffc107; }
         }
 
     </style>
@@ -197,7 +174,7 @@
             try {
                 const response = await fetch("https://calendario-pulizie.onrender.com/prenotazioni");
                 if (!response.ok) throw new Error(`Errore dal server: ${response.status}`);
-                allPrenotazioni = await response.json();
+                allPrenotazioni = (await response.json()).sort((a,b) => new Date(a.data_arrivo) - new Date(b.data_arrivo));
                 renderCalendar();
             } catch (err) {
                 calendarBody.innerHTML = `<div id="loading" style="color: red;">Errore: ${err.message}</div>`;
@@ -233,57 +210,55 @@
                 
                 const currentDayStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
                 const currentDayDate = new Date(currentDayStr + "T12:00:00Z");
-
-                // --- Logica per la vista Mobile ---
-                const mobileEventList = document.createElement('div');
-                mobileEventList.className = 'mobile-event-list';
+                
+                const desktopContainer = document.createElement('div');
+                desktopContainer.className = 'event-container';
+                
+                const mobileContainer = document.createElement('div');
+                mobileContainer.className = 'mobile-event-list';
 
                 allPrenotazioni.forEach(p => {
                     if (!p.data_arrivo || !p.data_partenza) return;
                     const arrivalDate = new Date(p.data_arrivo + "T12:00:00Z");
                     const departureDate = new Date(p.data_partenza + "T12:00:00Z");
+                    const notti = (departureDate - arrivalDate) / (1000 * 60 * 60 * 24);
+
+                    // --- Eventi del giorno corrente ---
+                    const isArrival = currentDayDate.getTime() === arrivalDate.getTime();
+                    const isDeparture = currentDayDate.getTime() === departureDate.getTime();
+                    const isStay = currentDayDate > arrivalDate && currentDayDate < departureDate;
+
+                    // --- Logica per la vista Mobile ---
+                    if(isArrival) mobileContainer.appendChild(createMobileEvent('checkin', `<b>Arrivo:</b> ${p.ospite} (${p.persone}p - ${notti} notti)`));
+                    if(isDeparture) mobileContainer.appendChild(createMobileEvent('checkout', `<b>Pulizia</b> (partenza ${p.ospite})`));
+                    if(isStay) mobileContainer.appendChild(createMobileEvent('stay', `<b>Permanenza:</b> ${p.ospite}`));
                     
-                    const createMobileEvent = (type, text) => {
-                        const eventDiv = document.createElement('div');
-                        eventDiv.className = `mobile-event ${type}`;
-                        eventDiv.innerHTML = text;
-                        mobileEventList.appendChild(eventDiv);
-                    };
-
-                    if (currentDayDate.getTime() === arrivalDate.getTime()) {
-                        const notti = (departureDate - arrivalDate) / (1000 * 60 * 60 * 24);
-                        createMobileEvent('checkin', `<b>Arrivo:</b> ${p.ospite} (${notti} notti)`);
-                    } else if (currentDayDate.getTime() === departureDate.getTime()) {
-                        createMobileEvent('checkout', `<b>Pulizia:</b> ${p.ospite}`);
-                    } else if (currentDayDate > arrivalDate && currentDayDate < departureDate) {
-                        createMobileEvent('stay', `<b>Permanenza:</b> ${p.ospite}`);
+                    // --- Logica per la vista Desktop ---
+                    if (isDeparture) {
+                        const cleanBlock = document.createElement('div');
+                        cleanBlock.className = 'cleaning-block';
+                        cleanBlock.textContent = `Pulizia (${p.ospite})`;
+                        desktopContainer.appendChild(cleanBlock);
                     }
-
-                    // --- Logica per la vista Desktop (Barre) ---
-                    if (currentDayDate >= arrivalDate && currentDayDate < departureDate) {
+                    if (isArrival) {
                         const bar = document.createElement('div');
                         bar.className = 'booking-bar';
-                        if (currentDayDate.getTime() === arrivalDate.getTime()) {
-                            bar.classList.add('booking-start');
-                            bar.textContent = p.ospite;
-                        }
-                        const dayBeforeDeparture = new Date(departureDate.getTime() - 86400000);
-                        if (currentDayDate.getTime() === dayBeforeDeparture.getTime()) {
-                            bar.classList.add('booking-end');
-                        }
-                        dayCell.appendChild(bar);
-                    }
-                    if (currentDayDate.getTime() === departureDate.getTime()) {
-                        const dot = document.createElement('div');
-                        dot.className = 'cleaning-dot';
-                        dot.title = `Pulizia per ${p.ospite}`;
-                        dayCell.appendChild(dot);
+                        bar.textContent = `${p.ospite} (${p.persone}p)`;
+                        desktopContainer.appendChild(bar);
                     }
                 });
                 
-                dayCell.appendChild(mobileEventList);
+                dayCell.appendChild(desktopContainer);
+                dayCell.appendChild(mobileContainer);
                 calendarBody.appendChild(dayCell);
             }
+        };
+
+        const createMobileEvent = (type, text) => {
+            const eventDiv = document.createElement('div');
+            eventDiv.className = `mobile-event ${type}`;
+            eventDiv.innerHTML = text;
+            return eventDiv;
         };
         
         const renderDayHeaders = () => {
